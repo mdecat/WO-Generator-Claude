@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(PAC=\"C:\\\\Users\\\\madecat\\\\AppData\\\\Local\\\\Microsoft\\\\PowerAppsCli\\\\Microsoft.PowerApps.CLI.2.4.1\\\\tools\\\\pac.exe\" \"$PAC\" help)",
+      "Bash(node scripts/deploy_test.mjs)",
+      "Bash(\"C:\\\\Users\\\\madecat\\\\AppData\\\\Local\\\\Microsoft\\\\PowerAppsCli\\\\Microsoft.PowerApps.CLI.2.4.1\\\\tools\\\\pac.exe\" solution:*)",
+      "Bash(node scripts/minimal_test.mjs)",
+      "Bash(powershell -Command \"Add-Type -A ''System.IO.Compression.FileSystem''; $z = [IO.Compression.ZipFile]::OpenRead\\(''c:/Users/madecat/Coding/WO Generator-Claude/GBBClaude_reimport.zip''\\); $z.Entries | Select-Object FullName | head -5; $z.Dispose\\(\\)\")",
+      "Bash(powershell -Command \"Add-Type -A ''System.IO.Compression.FileSystem''; $z = [IO.Compression.ZipFile]::OpenRead\\(''c:/Users/madecat/Coding/WO Generator-Claude/GBBClaude_reimport.zip''\\); $z.Entries | ForEach-Object { $_.FullName } | Select-Object -First 8; $z.Dispose\\(\\)\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\madecat\\.claude"
+    ]
+  }
+}

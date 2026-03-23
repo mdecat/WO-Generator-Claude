@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.24031.100"
+                 SolutionPackageVersion="9.2"
+                 languagecode="1033"
+                 generatedBy="GBB"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SolutionManifest>
+    <UniqueName>gbbwogeneratorclaude</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="GBB WO Generator Claude" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Enterprise Work Order Generator for Dynamics 365 Field Service. Enables bulk creation of demo Work Orders from Incident Types with map-based account selection, randomization, and full error reporting." languagecode="1033" />
+    </Descriptions>
+    <Version>1.0.0.0</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>gbb</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="GBB" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions>
+        <Description description="Microsoft Global Black Belt" languagecode="1033" />
+      </Descriptions>
+      <EMailAddress></EMailAddress>
+      <SupportingWebsiteUrl></SupportingWebsiteUrl>
+      <CustomizationPrefix>gbb</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>10000</CustomizationOptionValuePrefix>
+    </Publisher>
+    <RootComponents>
+      <!-- Web Resource: Main App HTML -->
+      <RootComponent type="61" schemaName="gbb_/wogenerator/index.html" behavior="0" />
+    </RootComponents>
+    <MissingDependencies />
+  </SolutionManifest>
+</ImportExportXml>

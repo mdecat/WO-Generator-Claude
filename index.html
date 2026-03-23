@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GBB Work Order Generator</title>
+    <meta name="description" content="Enterprise Work Order Generator for Dynamics 365 Field Service" />
+    <!--
+      Leaflet CSS is bundled via the React component imports (MapSelector.tsx).
+      No external CDN links — required for D365 web resource CSP compatibility.
+    -->
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body, #root { height: 100%; }
+      body { font-family: 'Segoe UI', system-ui, sans-serif; background: #F3F2F1; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

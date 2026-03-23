@@ -1,0 +1,18 @@
+node_modules/
+dist/
+*.zip
+.env
+.env.local
+.env.*.local
+
+# Build artifact folders
+.sol_build2/
+.sol_fromref/
+.sol_unpacked/
+.sol_src/
+.sol_min/
+.sol_minimal/
+.sol_test/
+
+# Solution web resource build outputs (regenerated on build)
+solution/WebResources/gbb_wogenerator/assets/

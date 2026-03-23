@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImportExportXml version="9.2.24031.100" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Entities />
+  <Roles />
+  <Workflows />
+  <FieldSecurityProfiles />
+  <Templates />
+  <EntityMaps />
+  <EntityRelationships />
+  <OrganizationSettings />
+  <optionsets />
+  <CustomControls />
+  <WebResources>
+    <!--
+      Web Resources are populated by the build-solution.sh script.
+      The React app build output is copied into:
+        solution/WebResources/gbb_/wogenerator/
+
+      Each file in dist/ becomes a WebResource entry here.
+      The launcher HTML at gbb_/wogenerator/index.html is the entry point.
+    -->
+  </WebResources>
+  <PluginAssemblies />
+  <SolutionPluginAssemblies />
+  <PluginSteps />
+  <PluginImages />
+  <ServiceEndpoints />
+  <BackgroundOperations />
+  <Reports />
+  <RibbonDiffXml />
+  <SavedQueries />
+  <AppModules>
+    <!--
+      Optionally include in an existing Field Service Model-Driven App
+      by adding a web resource page reference.
+    -->
+  </AppModules>
+  <SolutionTemplates />
+</ImportExportXml>
