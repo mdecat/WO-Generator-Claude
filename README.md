@@ -41,26 +41,34 @@ Power Platform Solution: "GBB WO Generator Claude"
 
 ---
 
-## Deployment
+## Installation
 
 ### Option A — Power Platform Web Resource (Primary, Recommended)
 
 **No Azure AD registration needed.** The app runs inside D365 and uses the existing user session.
 
-```bash
-npm run build:solution
-```
+#### Quickest path: download the pre-built ZIP
 
-This produces `gbbwogeneratorclaude_YYYYMMDD_HHMMSS.zip`.
-
-**Import steps:**
-1. Go to [make.powerapps.com](https://make.powerapps.com)
-2. Select your target environment
-3. **Solutions → Import → Upload** the ZIP file
+1. Go to the [**Releases**](https://github.com/mdecat/WO-Generator-Claude/releases/latest) page and download `gbbwogeneratorclaude_v1_0_0_0.zip`
+2. Go to [make.powerapps.com](https://make.powerapps.com) → select your target environment
+3. **Solutions → Import → Browse** → upload the ZIP → follow the wizard
 4. After import: **Solutions → GBB WO Generator Claude → Web Resources**
 5. Open `gbb_wogenerator/index.html` → **Preview** (or add to the D365 sitemap)
 
 When opened from D365, the app auto-detects the org URL from the active session and skips the login screen entirely. Users can switch to any other org on the same tenant via the **Switch Environment** option in the header.
+
+#### Build from source
+
+Requires Node.js 18+ and Python 3:
+
+```bash
+git clone https://github.com/mdecat/WO-Generator-Claude.git
+cd WO-Generator-Claude
+npm install
+node scripts/build-release.mjs
+```
+
+This produces `gbbwogeneratorclaude_v1_0_0_0.zip` — import it the same way as above.
 
 ---
 

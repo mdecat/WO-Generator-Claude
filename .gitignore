@@ -16,3 +16,5 @@ dist/
 
 # Solution web resource build outputs (regenerated on build)
 solution/WebResources/gbb_wogenerator/assets/
+gbbwogeneratorclaude_v*.zip
+gbbwogeneratorclaude_deploy.zip
