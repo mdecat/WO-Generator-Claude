@@ -259,6 +259,9 @@ export function WOParamsForm({ orgUrl, onChange }: WOParamsFormProps) {
               required
               validationMessage={validationErrors.priorityId}
               validationState={validationErrors.priorityId ? 'error' : 'none'}
+              hint={!loadingPri && priorities.length === 0
+                ? 'No priorities found. Go to Field Service → Settings → Priorities to create some.'
+                : undefined}
             >
               {loadingPri ? (
                 <Spinner size="tiny" label="Loading..." />
@@ -278,6 +281,11 @@ export function WOParamsForm({ orgUrl, onChange }: WOParamsFormProps) {
           {priorityMode === 'random' && priorities.length > 0 && (
             <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
               Will randomly assign from: {priorities.map((p) => p.msdyn_name).join(', ')}
+            </Text>
+          )}
+          {priorityMode === 'random' && !loadingPri && priorities.length === 0 && (
+            <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
+              No priorities found in this org. Go to Field Service → Settings → Priorities to create some. WOs will be created without a priority until priorities exist.
             </Text>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Card,
   CardHeader,
@@ -133,6 +133,19 @@ export function Step5Results() {
     ? (session.results.length / session.totalRequested) * 100
     : 0;
 
+  // Elapsed time ticker — increments every second while running
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [isRunning]);
+  const elapsedMs = session?.startTime ? Date.now() - session.startTime.getTime() : 0;
+  const elapsedSec = Math.floor(elapsedMs / 1000);
+  const elapsedLabel = elapsedSec >= 60
+    ? `${Math.floor(elapsedSec / 60)}m ${elapsedSec % 60}s`
+    : `${elapsedSec}s`;
+
   const filteredResults = useMemo(() => {
     return results.filter((r) => {
       if (filter !== 'all' && r.status !== filter) return false;
@@ -202,9 +215,14 @@ export function Step5Results() {
         {isRunning && (
           <div style={{ marginTop: tokens.spacingVerticalM }}>
             <ProgressBar value={progress / 100} max={1} thickness="large" />
-            <Text size={200} style={{ marginTop: '4px', color: tokens.colorNeutralForeground3 }}>
-              {Math.round(progress)}% complete
-            </Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
+                {Math.round(progress)}% complete
+              </Text>
+              <Text size={200} style={{ color: tokens.colorNeutralForeground3 }}>
+                ⏱ {elapsedLabel}
+              </Text>
+            </div>
           </div>
         )}
 

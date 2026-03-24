@@ -16,22 +16,16 @@ import {
   ShapesRegular,
   RectangleLandscapeRegular,
   DismissRegular,
+  CheckmarkRegular,
 } from '@fluentui/react-icons';
 import L from 'leaflet';
 // Bundle Leaflet CSS directly — required for D365 web resource (no external CDN)
 import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
-import 'leaflet-draw';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { point } from '@turf/helpers';
+import { point, polygon as turfPolygon } from '@turf/helpers';
 import { getAllAccountsForMap } from '../../api/accountApi';
 import { useGeneratorStore } from '../../store/generatorStore';
 import type { ServiceAccount } from '../../types/fieldService';
-
-// Fix Leaflet default icon URLs broken by bundlers
-const iconUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
-const iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
-const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
 
 const useStyles = makeStyles({
   root: {
@@ -88,30 +82,92 @@ interface MapSelectorProps {
   orgUrl?: string;
 }
 
+const SHAPE_STYLE = { color: '#0078D4', weight: 2, opacity: 0.8, fillOpacity: 0.15 };
+const VERTEX_STYLE = { radius: 6, fillColor: '#0078D4', color: '#004578', weight: 2, fillOpacity: 1, opacity: 1 };
+const FIRST_VERTEX_STYLE = { radius: 8, fillColor: '#D13438', color: '#8E0000', weight: 2, fillOpacity: 1, opacity: 1 };
+
 export function MapSelector({ orgUrl }: MapSelectorProps) {
   const styles = useStyles();
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<Map<string, L.CircleMarker>>(new Map());
   const drawnLayersRef = useRef<L.FeatureGroup | null>(null);
-  const polygonHandlerRef = useRef<L.Draw.Polygon | null>(null);
-  const rectangleHandlerRef = useRef<L.Draw.Rectangle | null>(null);
+
+  // Shared draw mode ref (readable inside Leaflet event handlers)
+  const activeDrawToolRef = useRef<'polygon' | 'rectangle' | null>(null);
+
+  // Custom polygon: click to add vertices, button to finish
+  const polyPointsRef = useRef<L.LatLng[]>([]);
+  const polyVertexMarkersRef = useRef<L.CircleMarker[]>([]);
+  const polyLineRef = useRef<L.Polyline | null>(null);
+
+  // Custom rectangle: two-click corner selection
+  const rectCorner1Ref = useRef<L.LatLng | null>(null);
+  const rectMarkerRef = useRef<L.CircleMarker | null>(null);
 
   const [accounts, setAccounts] = useState<ServiceAccount[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [drawnPolygon, setDrawnPolygon] = useState<GeoJSON.Feature | null>(null);
   const [activeDrawTool, setActiveDrawTool] = useState<'polygon' | 'rectangle' | null>(null);
+  const [polyVertexCount, setPolyVertexCount] = useState(0);
+  const [rectFirstCornerPlaced, setRectFirstCornerPlaced] = useState(false);
 
   const store = useGeneratorStore();
   const selectedAccounts = store.selectedAccounts;
+
+  // Keep ref in sync with state so Leaflet click handler (set up once) can read current mode
+  useEffect(() => {
+    activeDrawToolRef.current = activeDrawTool;
+  }, [activeDrawTool]);
 
   const isSelected = useCallback(
     (accountId: string) => selectedAccounts.some((a) => a.accountid === accountId),
     [selectedAccounts]
   );
 
-  // Initialize the map
+  // Helpers to clean up in-progress draw state
+  const clearPolyDraw = useCallback(() => {
+    const map = leafletMapRef.current;
+    polyPointsRef.current = [];
+    setPolyVertexCount(0);
+    polyVertexMarkersRef.current.forEach((m) => m.remove());
+    polyVertexMarkersRef.current = [];
+    if (polyLineRef.current) { polyLineRef.current.remove(); polyLineRef.current = null; }
+    if (map) map.getContainer().style.cursor = '';
+  }, []);
+
+  const clearRectDraw = useCallback(() => {
+    rectCorner1Ref.current = null;
+    setRectFirstCornerPlaced(false);
+    if (rectMarkerRef.current) { rectMarkerRef.current.remove(); rectMarkerRef.current = null; }
+  }, []);
+
+  // Finish the custom polygon — called by "Finish Drawing" button
+  const finishPolygon = useCallback(() => {
+    const pts = polyPointsRef.current;
+    if (pts.length < 3) return;
+
+    const map = leafletMapRef.current;
+    const drawnItems = drawnLayersRef.current;
+    if (!map || !drawnItems) return;
+
+    // Build closed ring
+    const ring = [...pts, pts[0]];
+    const coords: [number, number][] = ring.map((p) => [p.lng, p.lat]);
+    const geojson = turfPolygon([coords]) as GeoJSON.Feature;
+
+    // Draw polygon on map
+    const poly = L.polygon(pts.map((p) => [p.lat, p.lng] as [number, number]), SHAPE_STYLE);
+    drawnItems.clearLayers();
+    drawnItems.addLayer(poly);
+
+    setDrawnPolygon(geojson);
+    clearPolyDraw();
+    setActiveDrawTool(null);
+  }, [clearPolyDraw]);
+
+  // Initialize the map once
   useEffect(() => {
     if (!mapRef.current || leafletMapRef.current) return;
 
@@ -126,34 +182,67 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
       maxZoom: 19,
     }).addTo(map);
 
-    // Drawn items layer
+    // Try to zoom to user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 10),
+        () => { /* permission denied or unavailable — keep default USA view */ }
+      );
+    }
+
+    // Layer for completed shapes
     const drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     drawnLayersRef.current = drawnItems;
 
-    // Programmatic draw handlers — avoids relying on leaflet-draw toolbar sprite images
-    const shapeOptions = { color: '#0078D4', weight: 2, opacity: 0.8, fillOpacity: 0.15 };
-    polygonHandlerRef.current = new L.Draw.Polygon(map, {
-      allowIntersection: false,
-      showArea: true,
-      shapeOptions,
-    } as unknown as L.DrawOptions.PolygonOptions);
-    rectangleHandlerRef.current = new L.Draw.Rectangle(map, {
-      shapeOptions,
-    } as unknown as L.DrawOptions.RectangleOptions);
+    // Unified click handler for both polygon and rectangle drawing
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      const mode = activeDrawToolRef.current;
 
-    // Handle shape creation
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    map.on(L.Draw.Event.CREATED, (e: any) => {
-      const created = e as L.DrawEvents.Created;
-      drawnItems.clearLayers();
-      drawnItems.addLayer(created.layer);
-      const geojson = created.layer.toGeoJSON() as GeoJSON.Feature;
-      setDrawnPolygon(geojson);
-      setActiveDrawTool(null);
+      if (mode === 'polygon') {
+        const pts = polyPointsRef.current;
+        pts.push(e.latlng);
+        setPolyVertexCount(pts.length);
+
+        // First vertex — red marker so user can identify starting point
+        const vertexStyle = pts.length === 1 ? FIRST_VERTEX_STYLE : VERTEX_STYLE;
+        const vm = L.circleMarker(e.latlng, vertexStyle).addTo(map);
+        polyVertexMarkersRef.current.push(vm);
+
+        // Update preview polyline
+        if (polyLineRef.current) polyLineRef.current.remove();
+        if (pts.length >= 2) {
+          polyLineRef.current = L.polyline(pts.map((p) => [p.lat, p.lng] as [number, number]), {
+            color: '#0078D4', weight: 2, opacity: 0.8, dashArray: '5,5',
+          }).addTo(map);
+        }
+      } else if (mode === 'rectangle') {
+        if (!rectCorner1Ref.current) {
+          // First click — store corner 1
+          rectCorner1Ref.current = e.latlng;
+          setRectFirstCornerPlaced(true);
+          rectMarkerRef.current = L.circleMarker(e.latlng, VERTEX_STYLE).addTo(map);
+        } else {
+          // Second click — build and complete rectangle
+          const bounds = L.latLngBounds(rectCorner1Ref.current, e.latlng);
+          const rect = L.rectangle(bounds, SHAPE_STYLE);
+          drawnItems.clearLayers();
+          if (rectMarkerRef.current) { rectMarkerRef.current.remove(); rectMarkerRef.current = null; }
+          drawnItems.addLayer(rect);
+
+          const geojson = rect.toGeoJSON() as GeoJSON.Feature;
+          setDrawnPolygon(geojson);
+          rectCorner1Ref.current = null;
+          setRectFirstCornerPlaced(false);
+          setActiveDrawTool(null);
+        }
+      }
     });
 
     leafletMapRef.current = map;
+
+    // Recalculate map dimensions after container is fully laid out in D365 iframe
+    setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       map.remove();
@@ -185,7 +274,6 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
     const map = leafletMapRef.current;
     if (!map || accounts.length === 0) return;
 
-    // Clear existing markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current.clear();
 
@@ -257,29 +345,30 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
 
   const startDraw = (tool: 'polygon' | 'rectangle') => {
     if (activeDrawTool === tool) {
-      // Cancel active tool
-      polygonHandlerRef.current?.disable();
-      rectangleHandlerRef.current?.disable();
+      // Toggle off — cancel current draw
+      clearPolyDraw();
+      clearRectDraw();
       setActiveDrawTool(null);
     } else {
-      polygonHandlerRef.current?.disable();
-      rectangleHandlerRef.current?.disable();
-      if (tool === 'polygon') polygonHandlerRef.current?.enable();
-      else rectangleHandlerRef.current?.enable();
+      // Cancel any previous draw and start new
+      clearPolyDraw();
+      clearRectDraw();
       setActiveDrawTool(tool);
+      const map = leafletMapRef.current;
+      if (map) map.getContainer().style.cursor = 'crosshair';
     }
   };
 
   const clearDraw = () => {
-    polygonHandlerRef.current?.disable();
-    rectangleHandlerRef.current?.disable();
+    clearPolyDraw();
+    clearRectDraw();
     setActiveDrawTool(null);
     drawnLayersRef.current?.clearLayers();
     setDrawnPolygon(null);
     store.clearAccountSelection();
+    const map = leafletMapRef.current;
+    if (map) map.getContainer().style.cursor = '';
   };
-
-  const clearAll = clearDraw;
 
   const selectAllVisible = () => {
     store.setSelectedAccounts(accounts);
@@ -312,8 +401,8 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
           appearance="subtle"
           size="small"
           icon={<DismissCircleRegular />}
-          onClick={clearAll}
-          disabled={store.selectedAccounts.length === 0}
+          onClick={clearDraw}
+          disabled={store.selectedAccounts.length === 0 && !drawnPolygon && activeDrawTool === null}
         >
           Clear Selection
         </Button>
@@ -346,14 +435,34 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
         >
           {activeDrawTool === 'rectangle' ? 'Cancel Drawing' : 'Rectangle'}
         </Button>
-        {drawnPolygon && (
+        {drawnPolygon && activeDrawTool === null && (
           <Button appearance="subtle" size="small" icon={<DismissCircleRegular />} onClick={clearDraw}>
             Clear Shape
           </Button>
         )}
-        {activeDrawTool && (
+        {activeDrawTool === 'polygon' && (
+          <>
+            <Button
+              appearance="primary"
+              size="small"
+              icon={<CheckmarkRegular />}
+              onClick={finishPolygon}
+              disabled={polyVertexCount < 3}
+            >
+              Finish Drawing ({polyVertexCount} pts)
+            </Button>
+            <Text size={200} style={{ color: '#0078D4', fontStyle: 'italic' }}>
+              {polyVertexCount === 0
+                ? 'Click on the map to place vertices. Red dot = starting point.'
+                : polyVertexCount < 3
+                ? `${polyVertexCount} point${polyVertexCount > 1 ? 's' : ''} placed — need at least 3 to finish.`
+                : `${polyVertexCount} points — click Finish Drawing to close the polygon.`}
+            </Text>
+          </>
+        )}
+        {activeDrawTool === 'rectangle' && (
           <Text size={200} style={{ color: '#0078D4', fontStyle: 'italic' }}>
-            Click on the map to place points. Double-click to finish.
+            {rectFirstCornerPlaced ? 'Now click the opposite corner.' : 'Click the first corner on the map.'}
           </Text>
         )}
       </div>
@@ -370,7 +479,7 @@ export function MapSelector({ orgUrl }: MapSelectorProps) {
             </Text>
             {drawnPolygon && (
               <Text size={100} style={{ color: '#0078D4' }}>
-                Polygon active
+                Shape active
               </Text>
             )}
           </div>

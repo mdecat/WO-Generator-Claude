@@ -21,12 +21,11 @@ export async function getPriorities(orgUrl?: string): Promise<Priority[]> {
   const resp = await dvGet<ODataResponse<Priority>>(
     '/msdyn_priorities',
     {
-      $select: 'msdyn_priorityid,msdyn_name,msdyn_prioritylevel',
-      $orderby: 'msdyn_name asc',
+      $select: 'msdyn_priorityid,msdyn_name',
       $top: '200',
     },
     orgUrl
-  );
+  ).catch(() => ({ value: [] as Priority[] }));
   return resp.value ?? [];
 }
 

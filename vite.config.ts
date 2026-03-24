@@ -26,7 +26,7 @@ export default defineConfig({
           msal: ['@azure/msal-browser', '@azure/msal-react'],
           fluent: ['@fluentui/react-components', '@fluentui/react-icons'],
           query: ['@tanstack/react-query'],
-          map: ['leaflet', 'react-leaflet'],
+          map: ['leaflet', 'react-leaflet', '@turf/boolean-point-in-polygon', '@turf/helpers'],
           vendor: ['react', 'react-dom', 'react-router-dom', 'zustand', 'axios', 'date-fns'],
         },
       },
