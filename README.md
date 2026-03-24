@@ -55,12 +55,12 @@ This produces `gbbwogeneratorclaude_YYYYMMDD_HHMMSS.zip`.
 
 **Import steps:**
 1. Go to [make.powerapps.com](https://make.powerapps.com)
-2. Select your environment (`decat`)
+2. Select your target environment
 3. **Solutions → Import → Upload** the ZIP file
 4. After import: **Solutions → GBB WO Generator Claude → Web Resources**
 5. Open `gbb_wogenerator/index.html` → **Preview** (or add to the D365 sitemap)
 
-When opened from D365, the app auto-detects the org URL and skips the login screen entirely.
+When opened from D365, the app auto-detects the org URL from the active session and skips the login screen entirely. Users can switch to any other org on the same tenant via the **Switch Environment** option in the header.
 
 ---
 
@@ -121,7 +121,7 @@ npm install && npm run dev
 |---|---|
 | `msdyn_serviceaccount` | Selected account |
 | `msdyn_workordertype` | User selection |
-| `msdyn_incidenttype` | Selected incident type |
+| `msdyn_primaryincidenttype` | Selected incident type |
 | `msdyn_priority` | User selection or random |
 | `msdyn_timefrompromised` | Scheduled date at configured start hour |
 | `msdyn_timetopromised` | Scheduled date at configured end hour |
@@ -189,7 +189,7 @@ npm run build:solution
 |---|---|---|---|
 | `VITE_MSAL_CLIENT_ID` | ✅ | — | Azure AD App Registration Client ID |
 | `VITE_MSAL_TENANT_ID` | — | `common` | Azure AD Tenant ID (or `common` for multi-tenant) |
-| `VITE_DEFAULT_ORG_URL` | — | `https://decat.crm.dynamics.com` | Default Dataverse org URL |
+| `VITE_DEFAULT_ORG_URL` | — | _(blank)_ | Pre-fill the org URL in standalone mode. Not needed for web resource deployments — org URL is auto-detected from the D365 session. |
 
 ---
 
@@ -213,7 +213,7 @@ The WO creation logic in `src/api/workOrderApi.ts` → `createWorkOrder()` is de
 | UI | Fluent UI v9 (`@fluentui/react-components`) |
 | Data Fetching | TanStack Query v5 |
 | State | Zustand v5 |
-| Map | Leaflet 1.9 + leaflet-draw + react-leaflet |
+| Map | Leaflet 1.9 + react-leaflet (custom click-based drawing) |
 | Geo | Turf.js (`@turf/boolean-point-in-polygon`) |
 | HTTP | Axios |
 | Dates | date-fns v4 |

@@ -44,6 +44,6 @@ export const getDataverseScopes = (orgUrl: string): string[] => {
   return [`${base}/user_impersonation`];
 };
 
-/** Default org URL from env */
+/** Default org URL from env — leave blank when deployed as a web resource (XRM context takes over) */
 export const DEFAULT_ORG_URL =
-  import.meta.env.VITE_DEFAULT_ORG_URL || 'https://decat.crm.dynamics.com';
+  import.meta.env.VITE_DEFAULT_ORG_URL || '';
